@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-18T14:54:36.675Z",
+  "generatedAt": "2026-09-18T15:03:40.038Z",
   "collections": [
     {
       "name": "users",
@@ -7,9 +7,9 @@
       "apiRules": {
         "list": "id = @request.auth.id",
         "view": "id = @request.auth.id",
-        "create": "",
-        "update": "id = @request.auth.id",
-        "delete": "id = @request.auth.id"
+        "create": null,
+        "update": null,
+        "delete": null
       },
       "fields": [
         {
@@ -29,19 +29,213 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "admin",
+            "ehs"
+          ]
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "colaboradores",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "cpf_sintetico",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "funcao",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "estabelecimento",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "Ativo",
+            "Inativo"
+          ]
+        },
+        {
+          "name": "created_by",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "updated_by",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_colaboradores_cpf_sintetico ON colaboradores (cpf_sintetico)",
+        "CREATE INDEX idx_colaboradores_nome ON colaboradores (nome)"
+      ]
+    },
+    {
+      "name": "audit_logs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'admin'",
+        "view": "@request.auth.role = 'admin'",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "collection_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "record_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "action",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "create",
+            "update",
+            "delete"
+          ]
+        },
+        {
+          "name": "actor",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "details",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "before_snapshot",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "after_snapshot",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "field_changes",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_audit_logs_record ON audit_logs (collection_name, record_id, created DESC)"
       ]
     }
   ]
