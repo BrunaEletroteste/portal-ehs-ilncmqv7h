@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T18:27:31.347Z",
+  "generatedAt": "2026-09-24T18:31:20.588Z",
   "collections": [
     {
       "name": "users",
@@ -279,6 +279,48 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "validity_days",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "alert_days",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "rule_version",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "approval_authority",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "owner_area",
+          "type": "text",
+          "required": true,
+          "system": false
         }
       ],
       "indexes": []
