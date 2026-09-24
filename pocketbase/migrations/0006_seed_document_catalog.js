@@ -18,7 +18,8 @@ migrate(
         'Fixture sintética para validar upload, aprovação e versionamento.',
       )
       catalog.set('validity_days', 30)
-      catalog.set('alert_days', 0)
+      // NumberField.required trata zero como vazio; fixture técnica usa o menor alerta válido.
+      catalog.set('alert_days', 1)
       catalog.set('rule_version', 'TESTE-1.0')
       catalog.set('approval_authority', 'Bruna Oliveira')
       catalog.set('owner_area', 'EHS/SST')
