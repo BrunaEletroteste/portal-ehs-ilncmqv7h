@@ -15,9 +15,16 @@ routerAdd(
         const record = txApp.findRecordById('document_versions', id)
         if (record.getString('status') !== 'pendente')
           throw new BadRequestError('Somente versões pendentes podem ser aprovadas.')
-        const catalog = txApp.findRecordById('document_catalog', record.getString('catalog_id'))
-        const collaboratorId = record.getString('collaborator_id')
         const catalogId = record.getString('catalog_id')
+        if (!catalogId)
+          throw new BadRequestError('Corrija a pendência e associe um catálogo antes da aprovação.')
+        if (!record.getString('file'))
+          throw new BadRequestError('Anexe um arquivo PDF antes da aprovação.')
+
+        const catalog = txApp.findRecordById('document_catalog', catalogId)
+        if (!catalog.getBool('active'))
+          throw new BadRequestError('O catálogo da versão está inativo e não pode ser aprovado.')
+        const collaboratorId = record.getString('collaborator_id')
         const versions = txApp.findRecordsByFilter(
           'document_versions',
           "collaborator_id = '" + collaboratorId + "' && catalog_id = '" + catalogId + "'",
@@ -80,10 +87,12 @@ routerAdd(
           status: record.getString('status'),
           validity_state: record.getString('validity_state'),
           valid_until: record.getString('valid_until'),
+          pending_reason: record.getString('pending_reason'),
         }
         record.set('status', 'vigente')
         record.set('validity_state', validityState)
         record.set('valid_until', validUntil + ' 00:00:00.000Z')
+        record.set('pending_reason', '')
         record.set('approved_by', e.auth.id)
         record.set('approved_at', new Date().toISOString())
         record.set('updated_by', e.auth.id)
@@ -106,6 +115,7 @@ routerAdd(
         audit.set('field_changes', {
           status: { before: 'pendente', after: 'vigente' },
           validity_state: { before: 'pendente', after: validityState },
+          pending_reason: { before: before.pending_reason, after: '' },
         })
         txApp.save(audit)
 
@@ -122,9 +132,16 @@ routerAdd(
         }
       })
     } catch (error) {
-      $app
-        .logger()
-        .error('Falha ao aprovar versão documental', 'error', String(error), 'recordId', id)
+      const message = String(error)
+      if (
+        message.indexOf('pendentes') >= 0 ||
+        message.indexOf('Corrija') >= 0 ||
+        message.indexOf('Anexe') >= 0 ||
+        message.indexOf('inativo') >= 0
+      ) {
+        return e.badRequestError(message)
+      }
+      $app.logger().error('Falha ao aprovar versão documental', 'error', message, 'recordId', id)
       return e.badRequestError('Não foi possível aprovar a versão documental.')
     }
 

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T18:39:01.208Z",
+  "generatedAt": "2026-09-24T19:26:10.129Z",
   "collections": [
     {
       "name": "users",
@@ -346,7 +346,7 @@
         {
           "name": "catalog_id",
           "type": "relation",
-          "required": true,
+          "required": false,
           "system": false,
           "collectionRef": "document_catalog"
         },
@@ -463,6 +463,24 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "pending_reason",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "reprocessed_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "reprocess_count",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

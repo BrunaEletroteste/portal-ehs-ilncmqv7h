@@ -11,6 +11,7 @@ import {
   createDocumentVersion,
   listDocumentCatalogs,
   listDocumentVersions,
+  reprocessDocumentVersion,
   type DocumentCatalog,
   type DocumentVersion,
 } from '@/services/documentos'
@@ -41,11 +42,15 @@ export default function DocumentPanel({
   const [issuedOn, setIssuedOn] = useState(() => new Date().toISOString().slice(0, 10))
   const [origin, setOrigin] = useState('Teste sintético')
   const [notes, setNotes] = useState('Fixture aprovado para validação do Portal EHS.')
+  const [pendingReason, setPendingReason] = useState('Regra documental não cadastrada')
   const [catalogId, setCatalogId] = useState('')
+  const [reprocessCatalogs, setReprocessCatalogs] = useState<Record<string, string>>({})
+  const [reprocessFiles, setReprocessFiles] = useState<Record<string, File | null>>({})
   const [notice, setNotice] = useState<Notice | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [reprocessingId, setReprocessingId] = useState<string | null>(null)
   const [requestKey, setRequestKey] = useState(() => crypto.randomUUID())
 
   async function refresh() {
@@ -61,7 +66,11 @@ export default function DocumentPanel({
     let active = true
     setNotice(null)
     setFile(null)
+    setPendingReason('Regra documental não cadastrada')
+    setReprocessCatalogs({})
+    setReprocessFiles({})
     setRequestKey(crypto.randomUUID())
+    setCatalogId('')
     if (!collaborator) {
       setDocuments([])
       setCatalogs([])
@@ -73,9 +82,10 @@ export default function DocumentPanel({
     Promise.all([listDocumentCatalogs(), listDocumentVersions(collaborator.id)])
       .then(([catalogItems, documentPage]) => {
         if (!active) return
-        setCatalogs(catalogItems.filter((item) => item.active))
+        const activeCatalogs = catalogItems.filter((item) => item.active)
+        setCatalogs(activeCatalogs)
         setDocuments(documentPage.items)
-        setCatalogId((current) => current || catalogItems.find((item) => item.active)?.id || '')
+        setCatalogId(activeCatalogs[0]?.id || '')
       })
       .catch((error) => {
         if (active) setNotice({ type: 'error', text: getErrorMessage(error) })
@@ -91,20 +101,16 @@ export default function DocumentPanel({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!collaborator) return
-    if (!catalogId) {
-      setNotice({ type: 'error', text: 'Nenhum catálogo documental ativo está disponível.' })
-      return
-    }
-    if (!file) {
-      setNotice({ type: 'error', text: 'Selecione um arquivo PDF sintético.' })
-      return
-    }
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    if (file && file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       setNotice({ type: 'error', text: 'O arquivo precisa ser PDF.' })
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
+    if (file && file.size > 10 * 1024 * 1024) {
       setNotice({ type: 'error', text: 'O PDF deve ter no máximo 10 MB.' })
+      return
+    }
+    if (pendingReason.length > 500) {
+      setNotice({ type: 'error', text: 'O motivo da pendência deve ter no máximo 500 caracteres.' })
       return
     }
 
@@ -117,17 +123,64 @@ export default function DocumentPanel({
         issuedOn,
         origin,
         notes,
+        pendingReason: pendingReason.trim(),
         idempotencyKey: requestKey,
-        file,
+        file: file || undefined,
       })
       await refresh()
-      setNotice({ type: 'success', text: 'Versão registrada como pendente de aprovação.' })
+      setNotice({
+        type: 'success',
+        text: catalogId
+          ? 'Versão registrada como pendente de aprovação.'
+          : 'Pendência registrada sem regra aplicável. Corrija-a no histórico abaixo.',
+      })
       setFile(null)
+      setPendingReason('Regra documental não cadastrada')
       setRequestKey(crypto.randomUUID())
     } catch (error) {
       setNotice({ type: 'error', text: getErrorMessage(error) })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleReprocess(document: DocumentVersion) {
+    const targetCatalogId = reprocessCatalogs[document.id] || document.catalog_id || ''
+    const replacementFile = reprocessFiles[document.id] || undefined
+    if (!targetCatalogId) {
+      setNotice({ type: 'error', text: 'Selecione o catálogo que corrige a pendência.' })
+      return
+    }
+    if (
+      replacementFile &&
+      replacementFile.type !== 'application/pdf' &&
+      !replacementFile.name.toLowerCase().endsWith('.pdf')
+    ) {
+      setNotice({ type: 'error', text: 'O arquivo de correção precisa ser PDF.' })
+      return
+    }
+    if (replacementFile && replacementFile.size > 10 * 1024 * 1024) {
+      setNotice({ type: 'error', text: 'O PDF de correção deve ter no máximo 10 MB.' })
+      return
+    }
+
+    setReprocessingId(document.id)
+    setNotice(null)
+    try {
+      await reprocessDocumentVersion(document.id, {
+        catalogId: targetCatalogId,
+        file: replacementFile,
+      })
+      await refresh()
+      setReprocessFiles((current) => ({ ...current, [document.id]: null }))
+      setNotice({
+        type: 'success',
+        text: `Versão ${document.version_number} corrigida e reprocessada; permanece pendente até aprovação.`,
+      })
+    } catch (error) {
+      setNotice({ type: 'error', text: getErrorMessage(error) })
+    } finally {
+      setReprocessingId(null)
     }
   }
 
@@ -181,14 +234,18 @@ export default function DocumentPanel({
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={catalogId}
                   onChange={(event) => setCatalogId(event.target.value)}
-                  disabled={loading || catalogs.length === 0}
+                  disabled={loading}
                 >
+                  <option value="">Sem regra aplicável — registrar como pendente</option>
                   {catalogs.map((catalog) => (
                     <option key={catalog.id} value={catalog.id}>
                       {catalog.name} · {catalog.validity_days} dias · regra {catalog.rule_version}
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-slate-500">
+                  Sem regra aplicável, a versão não poderá ser aprovada até a correção.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="document-issued-on">Data de emissão</Label>
@@ -211,17 +268,27 @@ export default function DocumentPanel({
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="document-file">PDF sintético</Label>
+                <Label htmlFor="document-file">
+                  PDF sintético (opcional para registrar pendência)
+                </Label>
                 <Input
                   id="document-file"
                   type="file"
                   accept="application/pdf,.pdf"
-                  required
                   onChange={(event) => setFile(event.target.files?.[0] || null)}
                 />
                 <p className="text-xs text-slate-500">
-                  Máximo 10 MB. O upload fica pendente até aprovação.
+                  Máximo 10 MB. Sem PDF, a versão ficará pendente até o arquivo ser corrigido.
                 </p>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="document-pending-reason">Motivo ou observação da pendência</Label>
+                <Input
+                  id="document-pending-reason"
+                  maxLength={500}
+                  value={pendingReason}
+                  onChange={(event) => setPendingReason(event.target.value)}
+                />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="document-notes">Observação</Label>
@@ -232,8 +299,8 @@ export default function DocumentPanel({
                 />
               </div>
               <div className="flex items-end md:col-span-2">
-                <Button type="submit" disabled={saving || loading || catalogs.length === 0}>
-                  {saving ? 'Enviando PDF…' : 'Registrar nova versão'}
+                <Button type="submit" disabled={saving || loading}>
+                  {saving ? 'Enviando…' : 'Registrar nova versão'}
                 </Button>
               </div>
             </form>
@@ -256,37 +323,113 @@ export default function DocumentPanel({
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {documents.map((document) => (
-                    <div key={document.id} className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold">Versão {document.version_number}</p>
-                            <Badge variant={statusVariant(document.status)}>
-                              {document.status}
-                            </Badge>
-                            <Badge variant="outline">{document.validity_state}</Badge>
+                  {documents.map((document) => {
+                    const correctionCatalogId =
+                      reprocessCatalogs[document.id] || document.catalog_id || ''
+                    return (
+                      <div key={document.id} className="rounded-xl border border-slate-200 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold">Versão {document.version_number}</p>
+                              <Badge variant={statusVariant(document.status)}>
+                                {document.status}
+                              </Badge>
+                              <Badge variant="outline">{document.validity_state}</Badge>
+                            </div>
+                            <p className="mt-2 text-sm text-slate-600">
+                              Emissão: {dateOnly(document.issued_on)} · Validade calculada:{' '}
+                              {dateOnly(document.valid_until)}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Arquivo: {document.file || 'não informado'} · Regra:{' '}
+                              {document.catalog_id ? 'associada' : 'não cadastrada'}
+                            </p>
+                            {document.pending_reason && (
+                              <p className="mt-2 text-xs font-medium text-amber-700">
+                                Pendência: {document.pending_reason}
+                              </p>
+                            )}
+                            {document.reprocess_count ? (
+                              <p className="mt-1 text-xs text-slate-500">
+                                Reprocessamentos: {document.reprocess_count}
+                              </p>
+                            ) : null}
                           </div>
-                          <p className="mt-2 text-sm text-slate-600">
-                            Emissão: {dateOnly(document.issued_on)} · Validade calculada:{' '}
-                            {dateOnly(document.valid_until)}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            Arquivo: {document.file || 'não informado'} · Origem: {document.origin}
-                          </p>
+                          {isAdmin && document.status === 'pendente' && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleApprove(document.id)}
+                              disabled={approvingId === document.id}
+                            >
+                              {approvingId === document.id ? 'Aprovando…' : 'Aprovar versão'}
+                            </Button>
+                          )}
                         </div>
-                        {isAdmin && document.status === 'pendente' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(document.id)}
-                            disabled={approvingId === document.id}
-                          >
-                            {approvingId === document.id ? 'Aprovando…' : 'Aprovar versão'}
-                          </Button>
+                        {document.status === 'pendente' && (
+                          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                            <p className="text-sm font-semibold text-amber-900">
+                              Corrigir pendência
+                            </p>
+                            <p className="mt-1 text-xs text-amber-800">
+                              O mesmo ID e número da versão serão preservados. Após a correção, a
+                              versão continuará pendente até aprovação.
+                            </p>
+                            <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                              <div className="space-y-1">
+                                <Label htmlFor={`reprocess-catalog-${document.id}`}>
+                                  Catálogo aprovado
+                                </Label>
+                                <select
+                                  id={`reprocess-catalog-${document.id}`}
+                                  className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
+                                  value={correctionCatalogId}
+                                  onChange={(event) =>
+                                    setReprocessCatalogs((current) => ({
+                                      ...current,
+                                      [document.id]: event.target.value,
+                                    }))
+                                  }
+                                >
+                                  <option value="">Selecione o catálogo</option>
+                                  {catalogs.map((catalog) => (
+                                    <option key={catalog.id} value={catalog.id}>
+                                      {catalog.name} · regra {catalog.rule_version}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`reprocess-file-${document.id}`}>
+                                  Novo PDF (opcional se já existir)
+                                </Label>
+                                <Input
+                                  id={`reprocess-file-${document.id}`}
+                                  type="file"
+                                  accept="application/pdf,.pdf"
+                                  onChange={(event) =>
+                                    setReprocessFiles((current) => ({
+                                      ...current,
+                                      [document.id]: event.target.files?.[0] || null,
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                onClick={() => handleReprocess(document)}
+                                disabled={reprocessingId === document.id}
+                              >
+                                {reprocessingId === document.id
+                                  ? 'Reprocessando…'
+                                  : 'Corrigir e reprocessar'}
+                              </Button>
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

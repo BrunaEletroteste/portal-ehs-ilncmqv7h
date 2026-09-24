@@ -16,7 +16,7 @@ export type DocumentCatalog = {
 export type DocumentVersion = {
   id: string
   collaborator_id: string
-  catalog_id: string
+  catalog_id?: string
   idempotency_key: string
   version_number: number
   status: 'pendente' | 'vigente' | 'historico' | 'rejeitado'
@@ -25,6 +25,9 @@ export type DocumentVersion = {
   valid_until?: string
   origin: string
   notes?: string
+  pending_reason?: string
+  reprocessed_at?: string
+  reprocess_count?: number
   file?: string
   approved_by?: string
   approved_at?: string
@@ -51,8 +54,9 @@ export async function createDocumentVersion(data: {
   issuedOn: string
   origin: string
   notes: string
+  pendingReason: string
   idempotencyKey: string
-  file: File
+  file?: File
 }) {
   const body = new FormData()
   body.append('collaborator_id', data.collaboratorId)
@@ -60,9 +64,23 @@ export async function createDocumentVersion(data: {
   body.append('issued_on', data.issuedOn)
   body.append('origin', data.origin)
   body.append('notes', data.notes)
+  body.append('pending_reason', data.pendingReason)
   body.append('idempotency_key', data.idempotencyKey)
-  body.append('file', data.file)
+  if (data.file) body.append('file', data.file)
   return pb.send<DocumentVersion>('/backend/v1/documents', { method: 'POST', body })
+}
+
+export async function reprocessDocumentVersion(
+  id: string,
+  data: { catalogId: string; file?: File },
+) {
+  const body = new FormData()
+  body.append('catalog_id', data.catalogId)
+  if (data.file) body.append('file', data.file)
+  return pb.send<DocumentVersion>(`/backend/v1/documents/${encodeURIComponent(id)}/reprocess`, {
+    method: 'POST',
+    body,
+  })
 }
 
 export function approveDocumentVersion(id: string) {
