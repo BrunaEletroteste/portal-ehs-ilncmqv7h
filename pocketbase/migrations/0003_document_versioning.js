@@ -124,17 +124,7 @@ migrate(
     })
     app.save(versionsCollection)
 
-    const catalog = new Record(app.findCollectionByNameOrId('document_catalog'))
-    catalog.set('slug', 'documento-sintetico-teste-ehs')
-    catalog.set('name', 'Documento sintético de teste EHS')
-    catalog.set('description', 'Fixture sintética para validar upload, aprovação e versionamento.')
-    catalog.set('validity_days', 30)
-    catalog.set('alert_days', 0)
-    catalog.set('rule_version', 'TESTE-1.0')
-    catalog.set('approval_authority', 'Bruna Oliveira')
-    catalog.set('owner_area', 'EHS/SST')
-    catalog.set('active', true)
-    app.save(catalog)
+    // O seed da fixture fica em migração posterior, após o schema aplicado.
   },
   (app) => {
     app.delete(app.findCollectionByNameOrId('document_versions'))
