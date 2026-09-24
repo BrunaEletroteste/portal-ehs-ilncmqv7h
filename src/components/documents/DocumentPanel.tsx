@@ -42,7 +42,7 @@ export default function DocumentPanel({
   const [issuedOn, setIssuedOn] = useState(() => new Date().toISOString().slice(0, 10))
   const [origin, setOrigin] = useState('Teste sintético')
   const [notes, setNotes] = useState('Fixture aprovado para validação do Portal EHS.')
-  const [pendingReason, setPendingReason] = useState('Regra documental não cadastrada')
+  const [pendingReason, setPendingReason] = useState('')
   const [catalogId, setCatalogId] = useState('')
   const [reprocessCatalogs, setReprocessCatalogs] = useState<Record<string, string>>({})
   const [reprocessFiles, setReprocessFiles] = useState<Record<string, File | null>>({})
@@ -66,7 +66,7 @@ export default function DocumentPanel({
     let active = true
     setNotice(null)
     setFile(null)
-    setPendingReason('Regra documental não cadastrada')
+    setPendingReason('')
     setReprocessCatalogs({})
     setReprocessFiles({})
     setRequestKey(crypto.randomUUID())
@@ -135,7 +135,7 @@ export default function DocumentPanel({
           : 'Pendência registrada sem regra aplicável. Corrija-a no histórico abaixo.',
       })
       setFile(null)
-      setPendingReason('Regra documental não cadastrada')
+      setPendingReason('')
       setRequestKey(crypto.randomUUID())
     } catch (error) {
       setNotice({ type: 'error', text: getErrorMessage(error) })
@@ -288,6 +288,7 @@ export default function DocumentPanel({
                   maxLength={500}
                   value={pendingReason}
                   onChange={(event) => setPendingReason(event.target.value)}
+                  placeholder="Deixe vazio para o sistema calcular a pendência"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
