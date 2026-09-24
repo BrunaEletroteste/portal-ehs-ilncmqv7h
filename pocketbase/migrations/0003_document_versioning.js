@@ -32,7 +32,6 @@ migrate(
     })
     app.save(catalogCollection)
 
-    const catalogId = app.findCollectionByNameOrId('document_catalog').id
     const collaboratorCollectionId = app.findCollectionByNameOrId('colaboradores').id
     const versionsCollection = new Collection({
       name: 'document_versions',
@@ -52,10 +51,11 @@ migrate(
         },
         {
           name: 'catalog_id',
-          type: 'relation',
+          type: 'text',
           required: true,
-          collectionId: catalogId,
-          maxSelect: 1,
+          min: 15,
+          max: 40,
+          pattern: '^[a-z0-9]{15}$',
         },
         {
           name: 'idempotency_key',

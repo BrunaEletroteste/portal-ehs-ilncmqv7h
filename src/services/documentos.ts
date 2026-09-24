@@ -42,7 +42,6 @@ export function listDocumentVersions(collaboratorId: string) {
   return pb.collection('document_versions').getList<DocumentVersion>(1, 50, {
     filter,
     sort: '-version_number',
-    expand: 'catalog_id',
   })
 }
 
