@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T18:31:20.588Z",
+  "generatedAt": "2026-09-24T18:33:27.370Z",
   "collections": [
     {
       "name": "users",
@@ -324,6 +324,152 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "document_versions",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "collaborator_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "colaboradores"
+        },
+        {
+          "name": "catalog_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "document_catalog"
+        },
+        {
+          "name": "idempotency_key",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "version_number",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "pendente",
+            "vigente",
+            "historico",
+            "rejeitado"
+          ]
+        },
+        {
+          "name": "validity_state",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "pendente",
+            "válido",
+            "em alerta",
+            "vencido",
+            "não verificado",
+            "histórico"
+          ]
+        },
+        {
+          "name": "issued_on",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "valid_until",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "file",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "approved_by",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "approved_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created_by",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "updated_by",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_document_versions_idempotency ON document_versions (idempotency_key)",
+        "CREATE UNIQUE INDEX idx_document_versions_number ON document_versions (collaborator_id, catalog_id, version_number)",
+        "CREATE INDEX idx_document_versions_lookup ON document_versions (collaborator_id, catalog_id, status)"
+      ]
     }
   ]
 }
