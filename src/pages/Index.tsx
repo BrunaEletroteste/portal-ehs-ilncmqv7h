@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -297,6 +297,7 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<CollaboratorForm>(approvedFixture)
+  const documentPanelRef = useRef<HTMLDivElement>(null)
 
   async function refreshCollaborators() {
     const result = await listCollaborators()
@@ -306,6 +307,8 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
 
   async function loadHistory(collaborator: Collaborator) {
     setSelected(collaborator)
+    setNotice(null)
+    documentPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     try {
       const result = await listCollaboratorHistory(collaborator.id)
       setHistory(result.items)
@@ -506,9 +509,22 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
                           {formatDate(collaborator.updated)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" onClick={() => openEdit(collaborator)}>
-                            Editar
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => loadHistory(collaborator)}
+                            >
+                              {selected?.id === collaborator.id ? 'Selecionado' : 'Selecionar'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEdit(collaborator)}
+                            >
+                              Editar
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -575,7 +591,9 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
           </Card>
         </div>
 
-        <DocumentPanel collaborator={selected} isAdmin={user.role === 'admin'} />
+        <div ref={documentPanelRef}>
+          <DocumentPanel collaborator={selected} isAdmin={user.role === 'admin'} />
+        </div>
 
         {showForm && (
           <Card className="mt-6 border-sky-200 shadow-md">
