@@ -33,6 +33,7 @@ migrate(
     app.save(catalogCollection)
 
     const catalogId = app.findCollectionByNameOrId('document_catalog').id
+    const collaboratorCollectionId = app.findCollectionByNameOrId('colaboradores').id
     const versionsCollection = new Collection({
       name: 'document_versions',
       type: 'base',
@@ -46,7 +47,7 @@ migrate(
           name: 'collaborator_id',
           type: 'relation',
           required: true,
-          collectionId: 'pbc_558982881',
+          collectionId: collaboratorCollectionId,
           maxSelect: 1,
         },
         {
