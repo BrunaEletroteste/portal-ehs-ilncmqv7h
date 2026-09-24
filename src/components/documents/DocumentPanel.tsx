@@ -346,6 +346,7 @@ export default function DocumentPanel({
                               Arquivo: {document.file || 'não informado'} · Regra:{' '}
                               {document.catalog_id ? 'associada' : 'não cadastrada'}
                             </p>
+                            <p className="mt-1 text-xs text-slate-500">ID interno: {document.id}</p>
                             {document.pending_reason && (
                               <p className="mt-2 text-xs font-medium text-amber-700">
                                 Pendência: {document.pending_reason}
