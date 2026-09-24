@@ -357,15 +357,19 @@ export default function DocumentPanel({
                               </p>
                             ) : null}
                           </div>
-                          {isAdmin && document.status === 'pendente' && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprove(document.id)}
-                              disabled={approvingId === document.id}
-                            >
-                              {approvingId === document.id ? 'Aprovando…' : 'Aprovar versão'}
-                            </Button>
-                          )}
+                          {isAdmin && document.status === 'pendente' ? (
+                            document.catalog_id && document.file ? (
+                              <Button
+                                size="sm"
+                                onClick={() => handleApprove(document.id)}
+                                disabled={approvingId === document.id}
+                              >
+                                {approvingId === document.id ? 'Aprovando…' : 'Aprovar versão'}
+                              </Button>
+                            ) : (
+                              <Badge variant="outline">Aguardando correção</Badge>
+                            )
+                          ) : null}
                         </div>
                         {document.status === 'pendente' && (
                           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
