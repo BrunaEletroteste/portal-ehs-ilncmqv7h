@@ -24,6 +24,7 @@ import {
   type AuditLog,
   type Collaborator,
 } from '@/services/colaboradores'
+import DocumentPanel from '@/components/documents/DocumentPanel'
 
 type AuthView = 'setup' | 'login'
 type Notice = { type: 'success' | 'error'; text: string }
@@ -573,6 +574,8 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
             </CardContent>
           </Card>
         </div>
+
+        <DocumentPanel collaborator={selected} isAdmin={user.role === 'admin'} />
 
         {showForm && (
           <Card className="mt-6 border-sky-200 shadow-md">
