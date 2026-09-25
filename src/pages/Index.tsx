@@ -136,8 +136,8 @@ export default function Index() {
           onSelectTab={handleSelectTab}
           onSupportClick={() => {
             toast({
-              title: 'Suporte SEGURAPRO',
-              description: 'Canal de atendimento aberto. E-mail: suporte@segurapro.com.br',
+              title: 'Suporte EHS+Fácil',
+              description: 'Canal de atendimento aberto. E-mail: suporte@ehsfacil.com.br',
             })
           }}
         />

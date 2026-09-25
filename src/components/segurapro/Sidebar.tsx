@@ -55,7 +55,7 @@ export function Sidebar({ currentTab, onSelectTab, onSupportClick }: SidebarProp
           <Shield className="w-6 h-6 text-[#0d2b52] fill-[#0d2b52]" strokeWidth={2.2} />
         </div>
         <div>
-          <h1 className="font-bold text-lg leading-tight tracking-wide text-white">SEGURAPRO</h1>
+          <h1 className="font-bold text-lg leading-tight tracking-wide text-white">EHS+Fácil</h1>
           <p className="text-xs text-slate-300 font-normal">Gestão em SST</p>
         </div>
       </div>

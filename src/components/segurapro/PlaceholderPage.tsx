@@ -15,7 +15,7 @@ export function PlaceholderPage({ title, onBackToWorkers }: PlaceholderPageProps
       </div>
       <h2 className="text-xl font-bold text-slate-900 mb-2">{title}</h2>
       <p className="text-sm text-slate-500 mb-6">
-        Módulo em sincronização com o banco de dados do sistema SEGURAPRO. A tela principal e
+        Módulo em sincronização com o banco de dados do sistema EHS+Fácil. A tela principal e
         funcional no momento é a de <strong>Trabalhadores</strong>.
       </p>
       <button
