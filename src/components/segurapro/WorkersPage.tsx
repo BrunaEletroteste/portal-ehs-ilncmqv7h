@@ -15,6 +15,8 @@ interface WorkersPageProps {
   loading: boolean
   searchQuery: string
   onRefresh: () => void
+  selectedWorkerId: string | null
+  onSelectWorker: (id: string | null) => void
 }
 
 export function WorkersPage({
@@ -25,6 +27,8 @@ export function WorkersPage({
   loading,
   searchQuery,
   onRefresh,
+  selectedWorkerId,
+  onSelectWorker,
 }: WorkersPageProps) {
   // Normalizar filtro para corresponder com o valor salvo no banco ('afastado'/'afastados', 'vencido'/'vencidos')
   const normalizeStatus = (status: string) => {
@@ -110,6 +114,8 @@ export function WorkersPage({
           activeFilter={activeFilter}
           onClearFilter={() => onFilterChange(null)}
           totalCount={counts.total}
+          selectedId={selectedWorkerId}
+          onSelect={onSelectWorker}
         />
       )}
     </div>

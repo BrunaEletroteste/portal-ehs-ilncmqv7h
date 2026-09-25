@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Info } from 'lucide-react'
 import { Sidebar, type NavItemKey } from '@/components/segurapro/Sidebar'
 import { Topbar } from '@/components/segurapro/Topbar'
 import { WorkersPage } from '@/components/segurapro/WorkersPage'
 import { PlaceholderPage } from '@/components/segurapro/PlaceholderPage'
+import { AppShell } from '@/components/shell/AppShell'
+import { WorkerContextPanel } from '@/components/shell/ContextPanels'
 import {
   fetchAllColaboradores,
   type ColaboradorRecord,
@@ -14,13 +17,13 @@ import { useToast } from '@/hooks/use-toast'
 export default function Index() {
   const { toast } = useToast()
 
-  // Navigation tab (default: 'trabalhadores' as in screenshot)
+  // Navigation tab (default: 'trabalhadores')
   const [currentTab, setCurrentTab] = useState<NavItemKey>('trabalhadores')
 
   // Search input in topbar
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Active KPI filter: default 'afastados' as shown selected in the screenshot!
+  // Active KPI filter
   const [activeFilter, setActiveFilter] = useState<ConformidadeStatus | null>('afastados')
 
   // Data from PocketBase
@@ -33,6 +36,10 @@ export default function Index() {
     vencidos: 5,
   })
   const [loading, setLoading] = useState(true)
+
+  // Painel de contexto (shell global)
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null)
+  const [panelOpen, setPanelOpen] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -92,26 +99,50 @@ export default function Index() {
     }
   }
 
-  return (
-    <div className="flex min-h-screen bg-[#f8fafc] font-sans antialiased text-slate-800">
-      {/* Sidebar - Fixa à esquerda com fundo azul-marinho escuro */}
-      <Sidebar
-        currentTab={currentTab}
-        onSelectTab={(tab) => {
-          setCurrentTab(tab)
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-        }}
-        onSupportClick={() => {
-          toast({
-            title: 'Suporte SEGURAPRO',
-            description: 'Canal de atendimento aberto. E-mail: suporte@segurapro.com.br',
-          })
-        }}
-      />
+  const selectedWorker = collaborators.find((c) => c.id === selectedWorkerId) ?? null
+  const isWorkersTab = currentTab === 'trabalhadores'
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Topbar */}
+  function handleSelectWorker(id: string | null) {
+    setSelectedWorkerId(id)
+    if (id !== null) setPanelOpen(true)
+  }
+
+  function handleSelectTab(tab: NavItemKey) {
+    setCurrentTab(tab)
+    setSelectedWorkerId(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const panelBody = isWorkersTab ? (
+    <WorkerContextPanel worker={selectedWorker} />
+  ) : (
+    <div className="text-center py-12 px-2">
+      <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+        <Info className="w-5 h-5" />
+      </div>
+      <p className="text-sm font-semibold text-slate-700">Sem contexto nesta seção</p>
+      <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+        Quando o módulo {getTabTitle(currentTab)} estiver ativo, os itens selecionados aparecerão
+        aqui.
+      </p>
+    </div>
+  )
+
+  return (
+    <AppShell
+      sidebar={
+        <Sidebar
+          currentTab={currentTab}
+          onSelectTab={handleSelectTab}
+          onSupportClick={() => {
+            toast({
+              title: 'Suporte SEGURAPRO',
+              description: 'Canal de atendimento aberto. E-mail: suporte@segurapro.com.br',
+            })
+          }}
+        />
+      }
+      topbar={
         <Topbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -120,28 +151,38 @@ export default function Index() {
           userRole="Administrador"
           userInitials="JS"
         />
-
-        {/* Page Content */}
-        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {currentTab === 'trabalhadores' ? (
-            <WorkersPage
-              collaborators={collaborators}
-              counts={counts}
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
-              loading={loading}
-              searchQuery={searchQuery}
-              onRefresh={loadData}
-            />
-          ) : (
-            <PlaceholderPage
-              title={getTabTitle(currentTab)}
-              tabKey={currentTab}
-              onBackToWorkers={() => setCurrentTab('trabalhadores')}
-            />
-          )}
-        </main>
-      </div>
-    </div>
+      }
+      main={
+        isWorkersTab ? (
+          <WorkersPage
+            collaborators={collaborators}
+            counts={counts}
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            loading={loading}
+            searchQuery={searchQuery}
+            onRefresh={loadData}
+            selectedWorkerId={selectedWorkerId}
+            onSelectWorker={handleSelectWorker}
+          />
+        ) : (
+          <PlaceholderPage
+            title={getTabTitle(currentTab)}
+            tabKey={currentTab}
+            onBackToWorkers={() => handleSelectTab('trabalhadores')}
+          />
+        )
+      }
+      panelAvailable
+      panelOpen={panelOpen}
+      onTogglePanel={() => setPanelOpen((open) => !open)}
+      panelTitle={
+        isWorkersTab ? selectedWorker?.nome || 'Painel de contexto' : 'Painel de contexto'
+      }
+      panelSubtitle={
+        isWorkersTab ? selectedWorker?.funcao || 'Trabalhadores' : getTabTitle(currentTab)
+      }
+      panelBody={panelBody}
+    />
   )
 }

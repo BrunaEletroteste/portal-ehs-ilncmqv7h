@@ -6,6 +6,8 @@ interface WorkersTableProps {
   activeFilter: ConformidadeStatus | null
   onClearFilter: () => void
   totalCount: number
+  selectedId?: string | null
+  onSelect?: (id: string | null) => void
 }
 
 function getFilterLabel(filter: ConformidadeStatus | null, count: number): string {
@@ -75,7 +77,13 @@ function getStatusBadge(statusText: string, conformidade: ConformidadeStatus) {
   )
 }
 
-export function WorkersTable({ collaborators, activeFilter, onClearFilter }: WorkersTableProps) {
+export function WorkersTable({
+  collaborators,
+  activeFilter,
+  onClearFilter,
+  selectedId,
+  onSelect,
+}: WorkersTableProps) {
   const headerTitle = getFilterLabel(activeFilter, collaborators.length)
 
   return (
@@ -125,9 +133,25 @@ export function WorkersTable({ collaborators, activeFilter, onClearFilter }: Wor
             ) : (
               collaborators.map((c) => {
                 const barColor = getBarColorClass(c.barra_cor)
+                const isSelected = selectedId === c.id
 
                 return (
-                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors group">
+                  <tr
+                    key={c.id}
+                    tabIndex={0}
+                    aria-current={isSelected ? 'true' : undefined}
+                    title="Clique para ver o resumo no painel de contexto"
+                    onClick={() => onSelect?.(isSelected ? null : c.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onSelect?.(isSelected ? null : c.id)
+                      }
+                    }}
+                    className={`cursor-pointer transition-colors group focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+                      isSelected ? 'bg-blue-50' : 'hover:bg-slate-50/80'
+                    }`}
+                  >
                     {/* Colaborador com barra lateral colorida */}
                     <td className="py-4 pl-0 pr-4 whitespace-nowrap">
                       <div className="flex items-center">
