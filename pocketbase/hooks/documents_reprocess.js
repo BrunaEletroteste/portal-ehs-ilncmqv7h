@@ -7,7 +7,18 @@ routerAdd(
     const id = e.request.pathValue('id')
     const body = e.requestInfo().body || {}
     const catalogId = typeof body.catalog_id === 'string' ? body.catalog_id.trim() : ''
-    const files = e.findUploadedFiles('file')
+    let files = []
+    try {
+      files = e.findUploadedFiles('file')
+    } catch (error) {
+      const message = String(error).toLowerCase()
+      if (message.indexOf('no such file') < 0) {
+        $app
+          .logger()
+          .error('Falha ao ler arquivo de correção', 'error', String(error), 'recordId', id)
+        return e.badRequestError('Não foi possível validar o arquivo enviado.')
+      }
+    }
 
     if (!/^[a-z0-9]{15}$/.test(id)) return e.badRequestError('Documento inválido.')
     if (!/^[a-z0-9]{15}$/.test(catalogId))

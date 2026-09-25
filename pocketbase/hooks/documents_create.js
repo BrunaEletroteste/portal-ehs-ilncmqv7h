@@ -14,7 +14,16 @@ routerAdd(
     const origin = typeof body.origin === 'string' ? body.origin.trim() : ''
     const notes = typeof body.notes === 'string' ? body.notes.trim() : ''
     let pendingReason = typeof body.pending_reason === 'string' ? body.pending_reason.trim() : ''
-    const files = e.findUploadedFiles('file')
+    let files = []
+    try {
+      files = e.findUploadedFiles('file')
+    } catch (error) {
+      const message = String(error).toLowerCase()
+      if (message.indexOf('no such file') < 0) {
+        $app.logger().error('Falha ao ler arquivo enviado', 'error', String(error))
+        return e.badRequestError('Não foi possível validar o arquivo enviado.')
+      }
+    }
 
     if (!/^[a-z0-9]{15}$/.test(collaboratorId)) {
       return e.badRequestError('Colaborador inválido.')
