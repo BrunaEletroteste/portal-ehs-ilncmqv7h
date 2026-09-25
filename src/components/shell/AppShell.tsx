@@ -107,7 +107,7 @@ export function AppShell({
         <button
           type="button"
           onClick={onTogglePanel}
-          className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#0d2b52] text-white text-sm font-medium shadow-lg hover:bg-[#123a6d] transition-colors"
+          className="fixed bottom-20 right-6 z-30 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#0d2b52] text-white text-sm font-medium shadow-lg hover:bg-[#123a6d] transition-colors"
         >
           <PanelRightOpen className="w-4 h-4" />
           <span className="hidden sm:inline">Painel de contexto</span>
